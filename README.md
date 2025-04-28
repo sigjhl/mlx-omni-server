@@ -1,5 +1,12 @@
 # MLX Omni Server
 
+#### New prompt-cache flags
+
+- `--prompt-cache-capacity`  
+  Number of per-conversation prompt caches to retain in memory (default: 8).  
+- `--prompt-cache-max-tokens`  
+  Maximum tokens to keep in each prompt cache (default: no limit).  
+
 [![image](https://img.shields.io/pypi/v/mlx-omni-server.svg)](https://pypi.python.org/pypi/mlx-omni-server)
 
 ![alt text](docs/banner.png)
