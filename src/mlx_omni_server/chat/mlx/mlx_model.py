@@ -166,6 +166,7 @@ class MLXModel(BaseTextModel):
                     break
 
                 current_tokens.append(response.token)
+                self._prompt_cache.tokens.append(response.token)
 
                 logprobs = None
                 if request.logprobs:
@@ -254,8 +255,8 @@ class MLXModel(BaseTextModel):
             else:
                 message = ChatMessage(role=Role.ASSISTANT, content=completion)
 
-            tokenized_prompt = self._chat_tokenizer.tokenizer.encode(prompt)
-            update_prompt_cache(self._prompt_cache, tokenized_prompt, self._model_id)
+            tokenized_prompt = list(self._prompt_cache.tokens)
+
             logger.debug(
                 f"Update the prompt cache, totaling {len(self._prompt_cache.tokens)} tokens."
             )

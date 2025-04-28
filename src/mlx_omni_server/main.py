@@ -3,6 +3,7 @@ import os
 
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .middleware.logging import RequestResponseLoggingMiddleware
 from .routers import api_router
@@ -11,8 +12,11 @@ app = FastAPI(title="MLX Omni Server")
 
 # Add request/response logging middleware with custom levels
 app.add_middleware(
-    RequestResponseLoggingMiddleware,
-    # exclude_paths=["/health"]
+    CORSMiddleware,
+    allow_origins=["*"],            # or ["http://localhost:8080"] if you host your page there
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(api_router)
@@ -40,6 +44,18 @@ def build_parser():
         help="Number of workers to use, defaults to 1",
     )
     parser.add_argument(
+        "--prompt-cache-capacity",
+        type=int,
+        default=8,
+        help="Number of per-conversation prompt caches to keep in memory (default: 8)",
+    )
+    parser.add_argument(
+        "--prompt-cache-max-tokens",
+        type=int,
+        default=None,
+        help="Max tokens to retain in each prompt cache (default: no limit)",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="info",
@@ -56,7 +72,11 @@ def start():
 
     # Set log level through environment variable
     os.environ["MLX_OMNI_LOG_LEVEL"] = args.log_level
-
+    # Prompt-cache tuning
+    os.environ["MLX_OMNI_PROMPT_CACHE_CAPACITY"] = str(args.prompt_cache_capacity)
+    if args.prompt_cache_max_tokens is not None:
+        os.environ["MLX_OMNI_PROMPT_CACHE_MAX_TOKENS"] = str(args.prompt_cache_max_tokens)
+        
     # Start server with uvicorn
     uvicorn.run(
         "mlx_omni_server.main:app",
