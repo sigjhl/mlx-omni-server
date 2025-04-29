@@ -72,31 +72,30 @@ def process_prompt_cache(
     """
     from mlx_lm.models.cache import make_prompt_cache
 
-    cache_len = len(prompt_cache.tokens)
-    prompt_len = len(prompt)
-    logger.debug(f"Prompt length: {prompt_len}, Cache length: {cache_len}")
+    cache_tokens = prompt_cache.tokens
+    cache_len    = len(cache_tokens)
+    prompt_len   = len(prompt)
 
-    if cache_len > 0 and prompt_len > 0:
-        prefix_len = min(10, cache_len, prompt_len)
-        logger.debug(f"Cache tokens prefix: {prompt_cache.tokens[:prefix_len]}")
-        logger.debug(f"Prompt tokens prefix: {prompt[:prefix_len]}")
-
-    if (
-        prompt_cache.model_key != model_key
-        or cache_len >= prompt_len
-        or prompt_cache.tokens != prompt[:cache_len]
-    ):
-        logger.debug("Resetting cache based on official logic")
+    # Full reset if model changed
+    if prompt_cache.model_key != model_key:
         prompt_cache.model_key = model_key
-        prompt_cache.cache = make_prompt_cache(model)
-        prompt_cache.tokens = []
-
-        prompt_cache.tokens.extend(prompt)
+        prompt_cache.cache     = make_prompt_cache(model)
+        prompt_cache.tokens    = prompt.copy()
         return prompt, 0
-    else:
-        result_prompt = prompt[cache_len:]
-        cached_tokens = cache_len
-        logger.debug(f"Using cache. Cached tokens: {cached_tokens}")
 
-        prompt_cache.tokens.extend(result_prompt)
-        return result_prompt, cached_tokens
+    # Longest common prefix
+    common_len = 0
+    for a, b in zip(cache_tokens, prompt):
+        if a != b:
+            break
+        common_len += 1
+
+    if common_len == 0:
+        # No overlap – reset
+        prompt_cache.cache  = make_prompt_cache(model)
+        prompt_cache.tokens = prompt.copy()
+        return prompt, 0
+
+    # Reuse the prefix that matches
+    prompt_cache.tokens = prompt.copy()            # keep mirror in sync
+    return prompt[common_len:], common_len
