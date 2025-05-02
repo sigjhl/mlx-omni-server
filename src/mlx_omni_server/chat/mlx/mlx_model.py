@@ -332,7 +332,7 @@ class MLXModel(BaseTextModel):
             generation_token_count = 0
 
             for result in self._stream_generate(
-                prompt=prompt_string,
+                prompt_string=prompt_string,
                 request=request,
             ):
                 final_completion_text += result.text
